@@ -63,65 +63,75 @@ gl.uniform3f(locColorBg, 1, 1, 1);
 gl.uniform3f(locColorFg, 0, 0, 0);
 
 // ── Circle generation ─────────────────────────────────────────────────────
+let _pathPts = [], _cumLen = [], _total = 0, _spacing = 0, _padPx = 0;
+
+function randomiseChaotic() {
+  const n = P.n;
+  let si = 0;
+  for (let i = 0; i < n; i++) {
+    const tgt  = (i / Math.max(n - 1, 1)) * _total;
+    while (si < _pathPts.length - 2 && _cumLen[si + 1] < tgt) si++;
+    const frac = (tgt - _cumLen[si]) / (_cumLen[si + 1] - _cumLen[si] || 1);
+    const px0  = _pathPts[si].x + frac * (_pathPts[si + 1].x - _pathPts[si].x);
+    const py0  = _pathPts[si].y + frac * (_pathPts[si + 1].y - _pathPts[si].y);
+    const px1  = px0 + (Math.random() - 0.5) * W * P.offset;
+    const py1  = py0 + (Math.random() - 0.5) * H * P.offset;
+    const t    = i / Math.max(n - 1, 1);
+    const grad = 1 + Math.max(0, 1 - Math.abs(t - 0.5) * 2) * 0.35;
+    const r    = _spacing * 0.65 * grad * (1.0 + (Math.random() * 2 - 1) * P.sizeRange) * P.sizeVar;
+    const rMax = Math.min(px1 - _padPx, W - px1 - _padPx, py1 - _padPx, H - py1 - _padPx);
+    chaoticData[i*3]   = px1;
+    chaoticData[i*3+1] = py1;
+    chaoticData[i*3+2] = Math.min(Math.max(_spacing * 0.35, r), rMax);
+  }
+}
+
 function rebuild() {
-  const padPx = S * P.pad;
-  const availW = W - 2 * padPx;
-  const availH = H - 2 * padPx;
-  const lx = padPx + availW * P.margin;
-  const rx = W - padPx - availW * P.margin;
+  _padPx = S * P.pad;
+  const availW = W - 2 * _padPx;
+  const availH = H - 2 * _padPx;
+  const lx = _padPx + availW * P.margin;
+  const rx = W - _padPx - availW * P.margin;
   const curveH = availH * P.depth;
-  const ty = padPx + (availH - curveH) / 2;
+  const ty = _padPx + (availH - curveH) / 2;
   const by = ty + curveH;
 
   const STEPS = 500;
-  const pts = [];
+  _pathPts = [];
   for (let i = 0; i <= STEPS; i++) {
     const u  = i / STEPS;
     const nu = 2 * u - 1;
     const ss = u * u * (3 - 2 * u);
     const xt = u + (ss - u) * P.sides;
-    pts.push({ x: lx + xt * (rx - lx), y: ty + (by - ty) * (1 - Math.pow(Math.abs(nu), P.curve)) });
+    _pathPts.push({ x: lx + xt * (rx - lx), y: ty + (by - ty) * (1 - Math.pow(Math.abs(nu), P.curve)) });
   }
-  const cumLen = [0];
+  _cumLen = [0];
   for (let i = 1; i <= STEPS; i++) {
-    const dx = pts[i].x - pts[i-1].x, dy = pts[i].y - pts[i-1].y;
-    cumLen.push(cumLen[i-1] + Math.sqrt(dx * dx + dy * dy));
+    const dx = _pathPts[i].x - _pathPts[i-1].x, dy = _pathPts[i].y - _pathPts[i-1].y;
+    _cumLen.push(_cumLen[i-1] + Math.sqrt(dx * dx + dy * dy));
   }
-  const total   = cumLen[STEPS];
-  const n       = P.n;
-  const spacing = total / Math.max(n - 1, 1);
+  _total   = _cumLen[STEPS];
+  const n  = P.n;
+  _spacing = _total / Math.max(n - 1, 1);
   let si = 0;
 
   for (let i = 0; i < n; i++) {
-    const tgt  = (i / Math.max(n - 1, 1)) * total;
-    while (si < STEPS - 1 && cumLen[si + 1] < tgt) si++;
-    const frac = (tgt - cumLen[si]) / (cumLen[si + 1] - cumLen[si] || 1);
-    const px0  = pts[si].x + frac * (pts[si + 1].x - pts[si].x);
-    const py0  = pts[si].y + frac * (pts[si + 1].y - pts[si].y);
-
-    // ordered: exact path position, controllable uniform radius
+    const tgt  = (i / Math.max(n - 1, 1)) * _total;
+    while (si < STEPS - 1 && _cumLen[si + 1] < tgt) si++;
+    const frac = (tgt - _cumLen[si]) / (_cumLen[si + 1] - _cumLen[si] || 1);
+    const px0  = _pathPts[si].x + frac * (_pathPts[si + 1].x - _pathPts[si].x);
+    const py0  = _pathPts[si].y + frac * (_pathPts[si + 1].y - _pathPts[si].y);
     orderedData[i*3]   = px0;
     orderedData[i*3+1] = py0;
-    orderedData[i*3+2] = Math.min(spacing * P.orderedSize, Math.min(px0 - padPx, W - px0 - padPx, py0 - padPx, H - py0 - padPx));
-
-    // chaotic: offset position, varying radius
-    const px1  = px0 + (Math.random() - 0.5) * W * P.offset;
-    const py1  = py0 + (Math.random() - 0.5) * H * P.offset;
-    const t    = i / Math.max(n - 1, 1);
-    const grad = 1 + Math.max(0, 1 - Math.abs(t - 0.5) * 2) * 0.35;
-    const r    = spacing * 0.65 * grad * (1.0 + (Math.random() * 2 - 1) * P.sizeRange) * P.sizeVar;
-    const rMax = Math.min(px1 - padPx, W - px1 - padPx, py1 - padPx, H - py1 - padPx);
-    chaoticData[i*3]   = px1;
-    chaoticData[i*3+1] = py1;
-    chaoticData[i*3+2] = Math.min(Math.max(spacing * 0.35, r), rMax);
+    orderedData[i*3+2] = Math.min(_spacing * P.orderedSize, Math.min(px0 - _padPx, W - px0 - _padPx, py0 - _padPx, H - py0 - _padPx));
   }
 
-  // unused slots: park off-screen
   for (let i = n; i < MAX_N; i++) {
     orderedData[i*3] = orderedData[i*3+1] = chaoticData[i*3] = chaoticData[i*3+1] = -99999;
     orderedData[i*3+2] = chaoticData[i*3+2] = 1;
   }
 
+  randomiseChaotic();
   gl.uniform1f(locK, S * P.kFactor);
 }
 
@@ -221,12 +231,21 @@ function holdEase(t) {
 }
 
 let start = null;
+let lastTransition = -1;
 function frame(ts) {
   requestAnimationFrame(frame);
   if (!start) start = ts;
 
   if (autoMode) {
-    currentEase = holdEase(Math.max(0, (ts - start) * 0.001 - 1));
+    const t = Math.max(0, (ts - start) * 0.001 - 1);
+    const PERIOD = (P.hold + P.ramp) * 2;
+    // each half-period marks the start of a new transition
+    const halfPeriod = Math.floor(t / (PERIOD / 2));
+    if (halfPeriod !== lastTransition) {
+      lastTransition = halfPeriod;
+      randomiseChaotic();
+    }
+    currentEase = holdEase(t);
     const pct = Math.round(currentEase * 100);
     document.getElementById('s-bl').value = pct;
     document.getElementById('v-bl').textContent = pct + '%';
