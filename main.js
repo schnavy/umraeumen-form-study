@@ -139,7 +139,7 @@ const pBody = document.getElementById('p-body');
 const pCollapse = document.getElementById('p-collapse');
 pCollapse.addEventListener('click', () => {
   const hidden = pBody.classList.toggle('hidden');
-  pCollapse.textContent = hidden ? 'open' : 'close';
+  pCollapse.textContent = hidden ? '+' : '-';
 });
 
 const PALETTE = [

@@ -12,11 +12,12 @@ canvas { display: block; width: 100vw; height: 100vh; }
 #panel {
   position: absolute;
   top: 12px; right: 12px;
-  font: 16px/1.6 monospace;
+  font: 14px/1.6 monospace;
   background: rgba(255,255,255,0.95);
   border: 1px solid #ccc;
   padding: 10px 14px;
   width: 340px;
+  border-radius: 3px;
 }
 
 .p-head {
@@ -26,7 +27,7 @@ canvas { display: block; width: 100vw; height: 100vh; }
 }
 
 #p-mode { color: #aaa; }
-#p-mode.on { color: #000; }
+#p-mode.on { color: #00a527; }
 
 #p-btn {
   font: 16px monospace;
