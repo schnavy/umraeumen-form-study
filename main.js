@@ -4,7 +4,7 @@ canvas.width = W; canvas.height = H;
 
 const MAX_N = 30;
 
-const P = { n: 14, kFactor: 0.015, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.0 };
+const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03 };
 
 let currentEase = 0;
 let autoMode    = true;
