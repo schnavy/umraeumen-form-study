@@ -4,7 +4,7 @@ canvas.width = W; canvas.height = H;
 
 const MAX_N = 30;
 
-const P = { n: 18, kFactor: 0.022, orderedSize: 0.38, offset: 0.10, sizeVar: 1.3, sizeRange: 0.7, margin: 0.04, depth: 0.91, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.75, pad: 0.04 };
+const P = { n: 14, kFactor: 0.015, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.0 };
 
 let currentEase = 0;
 let autoMode    = true;
@@ -65,10 +65,13 @@ gl.uniform3f(locColorFg, 0, 0, 0);
 // ── Circle generation ─────────────────────────────────────────────────────
 function rebuild() {
   const padPx = S * P.pad;
-  const lx = padPx + (W - 2 * padPx) * P.margin;
-  const rx = W - padPx - (W - 2 * padPx) * P.margin;
-  const ty = padPx + (H - 2 * padPx) * 0.08;
-  const by = padPx + (H - 2 * padPx) * P.depth;
+  const availW = W - 2 * padPx;
+  const availH = H - 2 * padPx;
+  const lx = padPx + availW * P.margin;
+  const rx = W - padPx - availW * P.margin;
+  const curveH = availH * P.depth;
+  const ty = padPx + (availH - curveH) / 2;
+  const by = ty + curveH;
 
   const STEPS = 500;
   const pts = [];
