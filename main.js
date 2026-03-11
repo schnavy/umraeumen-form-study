@@ -243,7 +243,7 @@ function frame(ts) {
     const halfPeriod = Math.floor(t / (PERIOD / 2));
     if (halfPeriod !== lastTransition) {
       lastTransition = halfPeriod;
-      randomiseChaotic();
+      if (halfPeriod % 2 === 0) randomiseChaotic();
     }
     currentEase = holdEase(t);
     const pct = Math.round(currentEase * 100);
