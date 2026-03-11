@@ -149,9 +149,6 @@ const PALETTE = [
   // vibrant
   '#ffed00', '#807ac6', '#5ab464', '#ff5100',
   '#374bd2', '#f197a1', '#8c0000',
-  // vibrant light (15% tint)
-  '#fffcd9', '#ececf6', '#e6f4e8', '#ffe5d9',
-  '#e1e4f8', '#fdeff1', '#eed9d9',
   // greys
   '#e7e7e7', '#b3b6b9', '#4a4a49'
 ];
