@@ -226,7 +226,7 @@ function frame(ts) {
   if (!start) start = ts;
 
   if (autoMode) {
-    currentEase = holdEase((ts - start) * 0.001);
+    currentEase = holdEase(Math.max(0, (ts - start) * 0.001 - 1));
     const pct = Math.round(currentEase * 100);
     document.getElementById('s-bl').value = pct;
     document.getElementById('v-bl').textContent = pct + '%';
