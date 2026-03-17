@@ -4,7 +4,7 @@ canvas.width = W; canvas.height = H;
 
 const MAX_N = 30;
 
-const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03 };
+const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, chaoticMode: 'offset', groupSize: 4 };
 
 let currentEase = 0;
 let autoMode    = true;
@@ -34,7 +34,7 @@ const frag = `
       float dc = length(p - uCircles[i].xy) - uCircles[i].z;
       d = smin(d, dc, uK);
     }
-    float v = clamp(d / 1.5 + 0.5, 0.0, 1.0);
+    float v = clamp(d / 0.8 + 0.5, 0.0, 1.0);
     gl_FragColor = vec4(mix(uColorFg, uColorBg, v), 1.0);
   }
 `;
@@ -65,24 +65,57 @@ gl.uniform3f(locColorFg, 0, 0, 0);
 // ── Circle generation ─────────────────────────────────────────────────────
 let _pathPts = [], _cumLen = [], _total = 0, _spacing = 0, _padPx = 0;
 
+function circleR(i, n) {
+  const t = i / Math.max(n - 1, 1);
+  const grad = 1 + Math.max(0, 1 - Math.abs(t - 0.5) * 2) * 0.35;
+  return _spacing * 0.65 * grad * (1.0 + (Math.random() * 2 - 1) * P.sizeRange) * P.sizeVar;
+}
+
+function placeCircle(i, n, px, py) {
+  const r    = circleR(i, n);
+  const rMax = Math.min(px - _padPx, W - px - _padPx, py - _padPx, H - py - _padPx);
+  chaoticData[i*3]   = px;
+  chaoticData[i*3+1] = py;
+  chaoticData[i*3+2] = Math.min(Math.max(_spacing * 0.35, r), rMax);
+}
+
 function randomiseChaotic() {
   const n = P.n;
-  let si = 0;
-  for (let i = 0; i < n; i++) {
-    const tgt  = (i / Math.max(n - 1, 1)) * _total;
-    while (si < _pathPts.length - 2 && _cumLen[si + 1] < tgt) si++;
-    const frac = (tgt - _cumLen[si]) / (_cumLen[si + 1] - _cumLen[si] || 1);
-    const px0  = _pathPts[si].x + frac * (_pathPts[si + 1].x - _pathPts[si].x);
-    const py0  = _pathPts[si].y + frac * (_pathPts[si + 1].y - _pathPts[si].y);
-    const px1  = px0 + (Math.random() - 0.5) * W * P.offset;
-    const py1  = py0 + (Math.random() - 0.5) * H * P.offset;
-    const t    = i / Math.max(n - 1, 1);
-    const grad = 1 + Math.max(0, 1 - Math.abs(t - 0.5) * 2) * 0.35;
-    const r    = _spacing * 0.65 * grad * (1.0 + (Math.random() * 2 - 1) * P.sizeRange) * P.sizeVar;
-    const rMax = Math.min(px1 - _padPx, W - px1 - _padPx, py1 - _padPx, H - py1 - _padPx);
-    chaoticData[i*3]   = px1;
-    chaoticData[i*3+1] = py1;
-    chaoticData[i*3+2] = Math.min(Math.max(_spacing * 0.35, r), rMax);
+
+  if (P.chaoticMode === 'island') {
+    const gs = Math.max(1, P.groupSize);
+    const numGroups = Math.ceil(n / gs);
+    const margin = _padPx + _spacing;
+    const spread = _spacing * 1.5;
+    const centers = [];
+    for (let g = 0; g < numGroups; g++) {
+      centers.push({
+        x: margin + Math.random() * (W - 2 * margin),
+        y: margin + Math.random() * (H - 2 * margin)
+      });
+    }
+    for (let i = 0; i < n; i++) {
+      const c = centers[Math.floor(i / gs)];
+      placeCircle(i, n, c.x + (Math.random() - 0.5) * spread, c.y + (Math.random() - 0.5) * spread);
+    }
+
+  } else if (P.chaoticMode === 'random') {
+    for (let i = 0; i < n; i++) {
+      placeCircle(i, n,
+        _padPx + Math.random() * (W - 2 * _padPx),
+        _padPx + Math.random() * (H - 2 * _padPx));
+    }
+
+  } else { // offset
+    let si = 0;
+    for (let i = 0; i < n; i++) {
+      const tgt  = (i / Math.max(n - 1, 1)) * _total;
+      while (si < _pathPts.length - 2 && _cumLen[si + 1] < tgt) si++;
+      const frac = (tgt - _cumLen[si]) / (_cumLen[si + 1] - _cumLen[si] || 1);
+      const px0  = _pathPts[si].x + frac * (_pathPts[si + 1].x - _pathPts[si].x);
+      const py0  = _pathPts[si].y + frac * (_pathPts[si + 1].y - _pathPts[si].y);
+      placeCircle(i, n, px0 + (Math.random() - 0.5) * W * P.offset, py0 + (Math.random() - 0.5) * H * P.offset);
+    }
   }
 }
 
@@ -146,7 +179,7 @@ function setMode(auto) {
   document.getElementById('row-bl').classList.toggle('dim', auto);
 }
 
-document.getElementById('p-btn').addEventListener('click', () => setMode(!autoMode));
+document.getElementById('p-btn').addEventListener('click', () => { setMode(!autoMode); updateURL(); });
 
 const pBody = document.getElementById('p-body');
 const pCollapse = document.getElementById('p-collapse');
@@ -180,15 +213,18 @@ function applyColors(bg, fg) {
 document.getElementById('c-random').addEventListener('click', () => {
   const shuffled = PALETTE.slice().sort(() => Math.random() - 0.5);
   applyColors(shuffled[0], shuffled[1]);
+  updateURL();
 });
 document.getElementById('c-bg').addEventListener('input', e => {
   const [r,g,b] = hexToRgb(e.target.value);
   gl.uniform3f(locColorBg, r, g, b);
   document.body.style.background = e.target.value;
+  updateURL();
 });
 document.getElementById('c-fg').addEventListener('input', e => {
   const [r,g,b] = hexToRgb(e.target.value);
   gl.uniform3f(locColorFg, r, g, b);
+  updateURL();
 });
 
 
@@ -196,6 +232,7 @@ function wire(sliderId, valId, display, apply) {
   document.getElementById(sliderId).addEventListener('input', e => {
     document.getElementById(valId).textContent = display(+e.target.value);
     apply(+e.target.value);
+    updateURL();
   });
 }
 
@@ -212,11 +249,87 @@ wire('s-sides','v-sides', v => (v/100).toFixed(2),         v => { P.sides = v/10
 wire('s-pad',  'v-pad',   v => v + '%',                    v => { P.pad = v/100; rebuild(); });
 wire('s-hold', 'v-hold',  v => v + 's',                    v => { P.hold = v; });
 wire('s-ramp', 'v-ramp',  v => (v/10).toFixed(1) + 's',   v => { P.ramp = v/10; });
+wire('s-gs',   'v-gs',    v => v,                          v => { P.groupSize = v; randomiseChaotic(); });
+
+function updateModeUI() {
+  const m = P.chaoticMode;
+  document.getElementById('row-off').classList.toggle('dim', m !== 'offset');
+  document.getElementById('row-gs').classList.toggle('dim',  m !== 'island');
+}
+document.getElementById('s-mode').addEventListener('change', e => {
+  P.chaoticMode = e.target.value;
+  updateModeUI();
+  randomiseChaotic();
+  updateURL();
+});
 
 document.getElementById('s-bl').addEventListener('input', e => {
   if (autoMode) setMode(false);
   currentEase = e.target.value / 100;
   document.getElementById('v-bl').textContent = e.target.value + '%';
+  updateURL();
+});
+
+// ── URL state ─────────────────────────────────────────────────────────────
+const URL_SLIDERS = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','hold','ramp'];
+
+let _suppressURLUpdate = false;
+
+function encodeState() {
+  const p = new URLSearchParams();
+  URL_SLIDERS.forEach(k => p.set(k, document.getElementById('s-' + k).value));
+  p.set('bl',   document.getElementById('s-bl').value);
+  p.set('mode', P.chaoticMode);
+  p.set('auto', autoMode ? '1' : '0');
+  p.set('bg',   document.getElementById('c-bg').value.slice(1));
+  p.set('fg',   document.getElementById('c-fg').value.slice(1));
+  return p;
+}
+
+function updateURL() {
+  if (_suppressURLUpdate) return;
+  history.replaceState(null, '', '?' + encodeState());
+}
+
+function applyFromURL() {
+  const p = new URLSearchParams(location.search);
+  if (!p.has('n')) return;
+  _suppressURLUpdate = true;
+  URL_SLIDERS.forEach(k => {
+    if (!p.has(k)) return;
+    const el = document.getElementById('s-' + k);
+    if (el) { el.value = p.get(k); el.dispatchEvent(new Event('input')); }
+  });
+  if (p.has('mode')) {
+    const el = document.getElementById('s-mode');
+    el.value = p.get('mode');
+    el.dispatchEvent(new Event('change'));
+  }
+  if (p.has('bl')) {
+    const v = +p.get('bl');
+    document.getElementById('s-bl').value = v;
+    document.getElementById('v-bl').textContent = v + '%';
+    currentEase = v / 100;
+  }
+  if (p.has('auto')) setMode(p.get('auto') === '1');
+  if (p.has('bg') && p.has('fg')) applyColors('#' + p.get('bg'), '#' + p.get('fg'));
+  _suppressURLUpdate = false;
+}
+
+applyFromURL();
+
+document.getElementById('p-link').addEventListener('click', () => {
+  updateURL();
+  navigator.clipboard.writeText(location.href).then(() => {
+    const btn = document.getElementById('p-link');
+    btn.textContent = 'copied!';
+    setTimeout(() => { btn.textContent = 'copy link'; }, 1500);
+  });
+});
+
+document.getElementById('p-reset').addEventListener('click', () => {
+  history.replaceState(null, '', location.pathname);
+  location.reload();
 });
 
 // ── Animation ─────────────────────────────────────────────────────────────

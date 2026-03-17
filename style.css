@@ -60,6 +60,17 @@ canvas { display: block; width: 100vw; height: 100vh; }
 }
 .dim { opacity: 0.2; pointer-events: none; }
 
+#p-link {
+  font: 16px monospace;
+  background: none;
+  border: 1px solid #ccc;
+  padding: 1px 7px;
+  cursor: pointer;
+  color: #666;
+  line-height: 1;
+}
+#p-link:hover { border-color: #888; color: #000; }
+
 #p-collapse {
   font: 16px monospace;
   background: none;
@@ -73,6 +84,16 @@ canvas { display: block; width: 100vw; height: 100vh; }
 #p-collapse:hover { border-color: #888; color: #000; }
 #p-body.hidden { display: none; }
 
+#p-link, #p-reset {
+  font: 14px monospace;
+  background: none;
+  border: 1px solid #ccc;
+  padding: 3px 10px;
+  cursor: pointer;
+  color: #666;
+}
+#p-link:hover, #p-reset:hover { border-color: #888; color: #000; }
+
 .palette-btn {
   font: 16px monospace;
   background: none;
@@ -85,6 +106,18 @@ canvas { display: block; width: 100vw; height: 100vh; }
   margin-top: 2px;
 }
 .palette-btn:hover { border-color: #888; color: #000; }
+
+.sel {
+  flex: 1;
+  font: 14px/1.6 monospace;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #333;
+  padding: 1px 4px;
+  cursor: pointer;
+  outline: none;
+}
+.sel:focus { border-color: #888; }
 
 .colorpick {
   flex: 1; height: 28px;

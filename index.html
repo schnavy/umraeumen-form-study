@@ -10,7 +10,9 @@
 <div id="panel">
   <div class="p-head">
     <span>UmRäumen 👉U👈 Generator</span>
-    <button id="p-collapse">-</button>
+    <div style="display:flex;gap:4px">
+      <button id="p-collapse">-</button>
+    </div>
   </div>
   <div id="p-body">
     <div class="sec">form base</div>
@@ -21,7 +23,9 @@
     <div class="row"><span class="lbl">size</span>    <input type="range" id="s-osz" min="10" max="80" step="1" value="31"> <span class="val" id="v-osz">0.31</span></div>
 
     <div class="sec">organic state</div>
-    <div class="row"><span class="lbl">offset</span>    <input type="range" id="s-off" min="0"  max="25"  step="1"  value="11">  <span class="val" id="v-off">0.11</span></div>
+    <div class="row"><span class="lbl">mode</span>      <select id="s-mode" class="sel"><option value="offset">offset</option><option value="island">island</option><option value="random">random</option></select></div>
+    <div class="row" id="row-off"><span class="lbl">offset</span>    <input type="range" id="s-off" min="0"  max="25"  step="1"  value="11">  <span class="val" id="v-off">0.11</span></div>
+    <div class="row dim" id="row-gs"><span class="lbl">grp size</span>  <input type="range" id="s-gs"  min="1"  max="12"  step="1"  value="4">   <span class="val" id="v-gs">4</span></div>
     <div class="row"><span class="lbl">size</span>      <input type="range" id="s-sz"  min="20" max="200" step="5"  value="140"> <span class="val" id="v-sz">1.4×</span></div>
     <div class="row"><span class="lbl">variation</span> <input type="range" id="s-var" min="0"  max="150" step="5"  value="55">  <span class="val" id="v-var">0.55</span></div>
 
@@ -47,7 +51,12 @@
       <button id="p-btn">manual</button>
     </div>
     <div class="row dim" id="row-bl"><span class="lbl">blend</span><input type="range" id="s-bl" min="0" max="100" step="1" value="0"><span class="val" id="v-bl">0%</span></div>
+    <div class="sec">current configuration</div>
 
+    <div style="display:flex;gap:6px">
+      <button id="p-link">copy link</button>
+      <button id="p-reset">reset</button>
+    </div>
   </div>
 </div>
 
