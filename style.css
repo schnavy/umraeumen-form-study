@@ -1,19 +1,33 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #fff; overflow: hidden; }
-canvas { display: block; width: 100vw; height: 100vh; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  background: #fff;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
 
 #info {
   position: absolute;
-  bottom: 8px; left: 10px;
-  font: 10px/1 monospace; color: #bbb;
+  bottom: 8px;
+  left: 10px;
+  font: 10px/1 monospace;
+  color: #bbb;
   pointer-events: none;
 }
 
 #panel {
   position: absolute;
-  top: 12px; right: 12px;
+  top: 12px;
+  right: 12px;
   font: 14px/1.6 monospace;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid #ccc;
   padding: 10px 14px;
   width: 340px;
@@ -26,18 +40,12 @@ canvas { display: block; width: 100vw; height: 100vh; }
   align-items: center;
 }
 
-#p-mode { color: #aaa; }
-#p-mode.on { color: #00a527; }
-
-#p-btn {
-  font: 16px monospace;
-  background: none;
-  border: 1px solid #ccc;
-  padding: 1px 7px;
-  cursor: pointer;
-  color: #666;
+#p-mode {
+  color: #aaa;
 }
-#p-btn:hover { border-color: #888; color: #000; }
+#p-mode.on {
+  color: #00a527;
+}
 
 .row {
   display: flex;
@@ -45,9 +53,22 @@ canvas { display: block; width: 100vw; height: 100vh; }
   gap: 5px;
   margin: 2px 0;
 }
-.lbl { width: 80px; flex-shrink: 0; color: #494949; }
-.row input[type=range] { flex: 1; accent-color: #000; cursor: pointer; }
-.val { width: 56px; flex-shrink: 0; text-align: right; color: #333; }
+.lbl {
+  width: 80px;
+  flex-shrink: 0;
+  color: #494949;
+}
+.row input[type="range"] {
+  flex: 1;
+  accent-color: #000;
+  cursor: pointer;
+}
+.val {
+  width: 56px;
+  flex-shrink: 0;
+  text-align: right;
+  color: #333;
+}
 
 .sec {
   font-size: 11px;
@@ -58,9 +79,12 @@ canvas { display: block; width: 100vw; height: 100vh; }
   margin: 7px 0 3px;
   padding-top: 5px;
 }
-.dim { opacity: 0.2; pointer-events: none; }
+.dim {
+  opacity: 0.2;
+  pointer-events: none;
+}
 
-#p-link {
+button {
   font: 16px monospace;
   background: none;
   border: 1px solid #ccc;
@@ -69,43 +93,24 @@ canvas { display: block; width: 100vw; height: 100vh; }
   color: #666;
   line-height: 1;
 }
-#p-link:hover { border-color: #888; color: #000; }
-
-#p-collapse {
-  font: 16px monospace;
-  background: none;
-  border: 1px solid #ccc;
-  padding: 1px 7px;
-  cursor: pointer;
-  color: #666;
-  line-height: 1;
-  justify-self: end;
+button:hover {
+  border-color: #888;
+  color: #000;
 }
-#p-collapse:hover { border-color: #888; color: #000; }
-#p-body.hidden { display: none; }
 
-#p-link, #p-reset {
+#p-body.hidden {
+  display: none;
+}
+
+button.sm {
   font: 14px monospace;
-  background: none;
-  border: 1px solid #ccc;
-  padding: 3px 10px;
-  cursor: pointer;
-  color: #666;
 }
-#p-link:hover, #p-reset:hover { border-color: #888; color: #000; }
 
-.palette-btn {
-  font: 16px monospace;
-  background: none;
-  border: 1px solid #ccc;
-  padding: 1px 7px;
-  cursor: pointer;
-  color: #666;
-  width: min-content;
-  white-space: nowrap;
-  margin-top: 2px;
+.buttons-group{
+  display:flex;
+  gap:6px;
+  margin-top: 10px;
 }
-.palette-btn:hover { border-color: #888; color: #000; }
 
 .sel {
   flex: 1;
@@ -117,12 +122,16 @@ canvas { display: block; width: 100vw; height: 100vh; }
   cursor: pointer;
   outline: none;
 }
-.sel:focus { border-color: #888; }
+.sel:focus {
+  border-color: #888;
+}
 
 .colorpick {
-  flex: 1; height: 28px;
+  flex: 1;
+  height: 28px;
   border: 1px solid #ddd;
-  padding: 0; cursor: pointer;
+  padding: 0;
+  cursor: pointer;
   background: none;
   max-width: 80px;
 }

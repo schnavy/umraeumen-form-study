@@ -322,6 +322,24 @@ function applyFromURL() {
 
 applyFromURL();
 
+document.getElementById('p-random-all').addEventListener('click', () => {
+  _suppressURLUpdate = true;
+  const sliders = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','hold','ramp'];
+  sliders.forEach(k => {
+    const el = document.getElementById('s-' + k);
+    const min = +el.min, max = +el.max, step = +(el.step) || 1;
+    const steps = Math.floor((max - min) / step);
+    el.value = min + Math.floor(Math.random() * (steps + 1)) * step;
+    el.dispatchEvent(new Event('input'));
+  });
+  const modes = ['offset', 'island', 'random'];
+  const modeEl = document.getElementById('s-mode');
+  modeEl.value = modes[Math.floor(Math.random() * modes.length)];
+  modeEl.dispatchEvent(new Event('change'));
+  _suppressURLUpdate = false;
+  updateURL();
+});
+
 document.getElementById('p-link').addEventListener('click', () => {
   updateURL();
   navigator.clipboard.writeText(location.href).then(() => {

@@ -11,7 +11,7 @@
   <div class="p-head">
     <span>UmRäumen 👉U👈 Generator</span>
     <div style="display:flex;gap:4px">
-      <button id="p-collapse">-</button>
+      <button id="p-collapse" class="sm">-</button>
     </div>
   </div>
   <div id="p-body">
@@ -48,14 +48,15 @@
     <div class="sec">transition</div>
     <div style="display:flex;gap:6px;justify-content: space-between;">
       <span id="p-mode" class="on">● auto mode</span>
-      <button id="p-btn">manual</button>
+      <button id="p-btn" class="sm">manual</button>
     </div>
     <div class="row dim" id="row-bl"><span class="lbl">blend</span><input type="range" id="s-bl" min="0" max="100" step="1" value="0"><span class="val" id="v-bl">0%</span></div>
     <div class="sec">current configuration</div>
 
-    <div style="display:flex;gap:6px">
-      <button id="p-link">copy link</button>
-      <button id="p-reset">reset</button>
+    <div class="buttons-group">
+      <button id="p-random-all" class="sm">random</button>
+      <button id="p-reset" class="sm">reset</button>
+      <button id="p-link" class="sm">copy link</button>
     </div>
   </div>
 </div>
