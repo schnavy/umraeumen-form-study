@@ -286,9 +286,13 @@ function encodeState() {
   return p;
 }
 
+let _urlTimer = null;
 function updateURL() {
   if (_suppressURLUpdate) return;
-  history.replaceState(null, '', '?' + encodeState());
+  clearTimeout(_urlTimer);
+  _urlTimer = setTimeout(() => {
+    history.replaceState(null, '', '?' + encodeState());
+  }, 300);
 }
 
 function applyFromURL() {
