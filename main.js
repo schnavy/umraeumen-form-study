@@ -4,14 +4,15 @@ canvas.width = W; canvas.height = H;
 
 const MAX_N = 30;
 
-const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, chaoticMode: 'offset', groupSize: 4 };
+const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, chaoticMode: 'offset', groupSize: 4, detour: 0 };
 
 let currentEase = 0;
 let autoMode    = true;
 
-const orderedData = new Float32Array(MAX_N * 3);
-const chaoticData = new Float32Array(MAX_N * 3);
-const liveData    = new Float32Array(MAX_N * 3);
+const orderedData  = new Float32Array(MAX_N * 3);
+const chaoticData  = new Float32Array(MAX_N * 3);
+const liveData     = new Float32Array(MAX_N * 3);
+const _detourSign  = new Float32Array(MAX_N);
 
 // ── WebGL setup ───────────────────────────────────────────────────────────
 const gl   = canvas.getContext('webgl');
@@ -106,6 +107,23 @@ function randomiseChaotic() {
         _padPx + Math.random() * (H - 2 * _padPx));
     }
 
+  } else if (P.chaoticMode === 'collect') {
+    const r = _spacing * P.orderedSize;
+    const cell = r * 2.2;
+    const cols = Math.ceil(Math.sqrt(n));
+    const rows = Math.ceil(n / cols);
+    const gridW = cols * cell;
+    const gridH = rows * cell;
+    const ox = _padPx + Math.random() * Math.max(0, W - 2 * _padPx - gridW);
+    const oy = _padPx + Math.random() * Math.max(0, H - 2 * _padPx - gridH);
+    for (let i = 0; i < n; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      chaoticData[i*3]   = ox + col * cell + cell / 2;
+      chaoticData[i*3+1] = oy + row * cell + cell / 2;
+      chaoticData[i*3+2] = r;
+    }
+
   } else { // offset
     let si = 0;
     for (let i = 0; i < n; i++) {
@@ -117,6 +135,8 @@ function randomiseChaotic() {
       placeCircle(i, n, px0 + (Math.random() - 0.5) * W * P.offset, py0 + (Math.random() - 0.5) * H * P.offset);
     }
   }
+
+  for (let i = 0; i < MAX_N; i++) _detourSign[i] = Math.random() < 0.5 ? 1 : -1;
 }
 
 function rebuild() {
@@ -247,9 +267,10 @@ wire('s-dp',   'v-dp',    v => (v/100).toFixed(2),         v => { P.depth = v/10
 wire('s-curve','v-curve', v => (v/10).toFixed(1),          v => { P.curve = v/10; rebuild(); });
 wire('s-sides','v-sides', v => (v/100).toFixed(2),         v => { P.sides = v/100; rebuild(); });
 wire('s-pad',  'v-pad',   v => v + '%',                    v => { P.pad = v/100; rebuild(); });
-wire('s-hold', 'v-hold',  v => v + 's',                    v => { P.hold = v; });
-wire('s-ramp', 'v-ramp',  v => (v/10).toFixed(1) + 's',   v => { P.ramp = v/10; });
-wire('s-gs',   'v-gs',    v => v,                          v => { P.groupSize = v; randomiseChaotic(); });
+wire('s-hold',  'v-hold',   v => v + 's',                    v => { P.hold = v; });
+wire('s-ramp',  'v-ramp',   v => (v/10).toFixed(1) + 's',   v => { P.ramp = v/10; });
+wire('s-detour','v-detour', v => (v/100).toFixed(1),         v => { P.detour = v/100; });
+wire('s-gs',    'v-gs',     v => v,                          v => { P.groupSize = v; randomiseChaotic(); });
 
 function updateModeUI() {
   const m = P.chaoticMode;
@@ -271,7 +292,7 @@ document.getElementById('s-bl').addEventListener('input', e => {
 });
 
 // ── URL state ─────────────────────────────────────────────────────────────
-const URL_SLIDERS = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','hold','ramp'];
+const URL_SLIDERS = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','hold','ramp','detour'];
 
 let _suppressURLUpdate = false;
 
@@ -324,7 +345,7 @@ applyFromURL();
 
 document.getElementById('p-random-all').addEventListener('click', () => {
   _suppressURLUpdate = true;
-  const sliders = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','hold','ramp'];
+  const sliders = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad'];
   sliders.forEach(k => {
     const el = document.getElementById('s-' + k);
     const min = +el.min, max = +el.max, step = +(el.step) || 1;
@@ -332,10 +353,12 @@ document.getElementById('p-random-all').addEventListener('click', () => {
     el.value = min + Math.floor(Math.random() * (steps + 1)) * step;
     el.dispatchEvent(new Event('input'));
   });
-  const modes = ['offset', 'island', 'random'];
+  const modes = ['offset', 'island', 'random', 'collect'];
   const modeEl = document.getElementById('s-mode');
   modeEl.value = modes[Math.floor(Math.random() * modes.length)];
   modeEl.dispatchEvent(new Event('change'));
+  const shuffled = PALETTE.slice().sort(() => Math.random() - 0.5);
+  applyColors(shuffled[0], shuffled[1]);
   _suppressURLUpdate = false;
   updateURL();
 });
@@ -386,8 +409,19 @@ function frame(ts) {
     document.getElementById('v-bl').textContent = pct + '%';
   }
 
-  for (let i = 0; i < MAX_N * 3; i++) {
-    liveData[i] = orderedData[i] + (chaoticData[i] - orderedData[i]) * currentEase;
+  const t = currentEase, t1 = 1 - t;
+  for (let i = 0; i < MAX_N; i++) {
+    const ox = orderedData[i*3], oy = orderedData[i*3+1];
+    const cx = chaoticData[i*3], cy = chaoticData[i*3+1];
+    const dx = cx - ox, dy = cy - oy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const amp  = P.detour * dist * _detourSign[i];
+    // control point: midpoint offset perpendicular to travel direction
+    const mx = (ox + cx) * 0.5 + (-dy / (dist || 1)) * amp;
+    const my = (oy + cy) * 0.5 + ( dx / (dist || 1)) * amp;
+    liveData[i*3]   = t1*t1*ox + 2*t1*t*mx + t*t*cx;
+    liveData[i*3+1] = t1*t1*oy + 2*t1*t*my + t*t*cy;
+    liveData[i*3+2] = orderedData[i*3+2] + (chaoticData[i*3+2] - orderedData[i*3+2]) * currentEase;
   }
   gl.uniform3fv(locCircles, liveData);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
