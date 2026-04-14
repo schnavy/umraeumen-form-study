@@ -4,7 +4,7 @@ canvas.width = W; canvas.height = H;
 
 const MAX_N = 30;
 
-const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, chaoticMode: 'offset', groupSize: 4, detour: 0 };
+const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, chaoticMode: 'offset', groupSize: 4, detour: 0, edgeMode: 'contain' };
 
 let currentEase = 0;
 let autoMode    = true;
@@ -75,13 +75,38 @@ function circleR(i, n) {
 function placeCircle(i, n, px, py) {
   const r    = circleR(i, n);
   const rMax = Math.min(px - _padPx, W - px - _padPx, py - _padPx, H - py - _padPx);
+  if (P.edgeMode === 'restrict' && r > rMax) return;
   chaoticData[i*3]   = px;
   chaoticData[i*3+1] = py;
-  chaoticData[i*3+2] = Math.min(Math.max(_spacing * 0.35, r), rMax);
+  chaoticData[i*3+2] = P.edgeMode === 'overflow'
+    ? Math.max(_spacing * 0.35, r)
+    : Math.min(Math.max(_spacing * 0.35, r), rMax);
+}
+
+// Ensure circles absent from either state are absent from both, so blending
+// never causes a circle to fly between a valid position and the parked sentinel.
+function syncRestrict() {
+  if (P.edgeMode !== 'restrict') return;
+  const n = P.n;
+  for (let i = 0; i < n; i++) {
+    if (orderedData[i*3] < -9000 || chaoticData[i*3] < -9000) {
+      orderedData[i*3]  = orderedData[i*3+1]  = -99999; orderedData[i*3+2]  = 1;
+      chaoticData[i*3] = chaoticData[i*3+1] = -99999; chaoticData[i*3+2] = 1;
+    }
+  }
 }
 
 function randomiseChaotic() {
   const n = P.n;
+
+  // In restrict mode, pre-mark active slots as absent so any circle that
+  // placeCircle skips simply stays absent rather than holding stale data.
+  if (P.edgeMode === 'restrict') {
+    for (let i = 0; i < n; i++) {
+      chaoticData[i*3] = chaoticData[i*3+1] = -99999;
+      chaoticData[i*3+2] = 1;
+    }
+  }
 
   if (P.chaoticMode === 'island') {
     const gs = Math.max(1, P.groupSize);
@@ -137,6 +162,8 @@ function randomiseChaotic() {
   }
 
   for (let i = 0; i < MAX_N; i++) _detourSign[i] = Math.random() < 0.5 ? 1 : -1;
+
+  syncRestrict();
 }
 
 function rebuild() {
@@ -168,15 +195,26 @@ function rebuild() {
   _spacing = _total / Math.max(n - 1, 1);
   let si = 0;
 
+  // Pre-mark active ordered slots as absent so restrict skips leave clean state.
+  if (P.edgeMode === 'restrict') {
+    for (let i = 0; i < n; i++) {
+      orderedData[i*3] = orderedData[i*3+1] = -99999;
+      orderedData[i*3+2] = 1;
+    }
+  }
+
   for (let i = 0; i < n; i++) {
     const tgt  = (i / Math.max(n - 1, 1)) * _total;
     while (si < STEPS - 1 && _cumLen[si + 1] < tgt) si++;
     const frac = (tgt - _cumLen[si]) / (_cumLen[si + 1] - _cumLen[si] || 1);
     const px0  = _pathPts[si].x + frac * (_pathPts[si + 1].x - _pathPts[si].x);
     const py0  = _pathPts[si].y + frac * (_pathPts[si + 1].y - _pathPts[si].y);
+    const or = _spacing * P.orderedSize;
+    const orMax = Math.min(px0 - _padPx, W - px0 - _padPx, py0 - _padPx, H - py0 - _padPx);
+    if (P.edgeMode === 'restrict' && or > orMax) continue;
     orderedData[i*3]   = px0;
     orderedData[i*3+1] = py0;
-    orderedData[i*3+2] = Math.min(_spacing * P.orderedSize, Math.min(px0 - _padPx, W - px0 - _padPx, py0 - _padPx, H - py0 - _padPx));
+    orderedData[i*3+2] = P.edgeMode === 'overflow' ? or : Math.min(or, orMax);
   }
 
   for (let i = n; i < MAX_N; i++) {
@@ -284,6 +322,12 @@ document.getElementById('s-mode').addEventListener('change', e => {
   updateURL();
 });
 
+document.getElementById('s-edge').addEventListener('change', e => {
+  P.edgeMode = e.target.value;
+  rebuild();
+  updateURL();
+});
+
 document.getElementById('s-bl').addEventListener('input', e => {
   if (autoMode) setMode(false);
   currentEase = e.target.value / 100;
@@ -301,6 +345,7 @@ function encodeState() {
   URL_SLIDERS.forEach(k => p.set(k, document.getElementById('s-' + k).value));
   p.set('bl',   document.getElementById('s-bl').value);
   p.set('mode', P.chaoticMode);
+  p.set('edge', P.edgeMode);
   p.set('auto', autoMode ? '1' : '0');
   p.set('bg',   document.getElementById('c-bg').value.slice(1));
   p.set('fg',   document.getElementById('c-fg').value.slice(1));
@@ -328,6 +373,11 @@ function applyFromURL() {
   if (p.has('mode')) {
     const el = document.getElementById('s-mode');
     el.value = p.get('mode');
+    el.dispatchEvent(new Event('change'));
+  }
+  if (p.has('edge')) {
+    const el = document.getElementById('s-edge');
+    el.value = p.get('edge');
     el.dispatchEvent(new Event('change'));
   }
   if (p.has('bl')) {
