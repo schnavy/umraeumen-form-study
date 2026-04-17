@@ -135,8 +135,14 @@ function randomiseChaotic() {
   } else if (P.chaoticMode === 'collect') {
     const r = _spacing * P.orderedSize;
     const cell = r * 2.2;
-    const cols = Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
+    const maxCols = Math.max(1, Math.floor((W - 2 * _padPx) / cell));
+    const maxRows = Math.max(1, Math.floor((H - 2 * _padPx) / cell));
+    const valid = [];
+    for (let c = 1; c <= Math.min(n, maxCols); c++) {
+      const ro = Math.ceil(n / c);
+      if (ro <= maxRows) valid.push([c, ro]);
+    }
+    const [cols, rows] = valid[Math.floor(Math.random() * valid.length)] || [Math.min(n, maxCols), Math.ceil(n / Math.min(n, maxCols))];
     const gridW = cols * cell;
     const gridH = rows * cell;
     const ox = _padPx + Math.random() * Math.max(0, W - 2 * _padPx - gridW);
