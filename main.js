@@ -412,7 +412,7 @@ applyFromURL();
 
 document.getElementById('p-random-all').addEventListener('click', () => {
   _suppressURLUpdate = true;
-  const sliders = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad'];
+  const sliders = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','detour'];
   sliders.forEach(k => {
     const el = document.getElementById('s-' + k);
     const min = +el.min, max = +el.max, step = +(el.step) || 1;
@@ -428,6 +428,10 @@ document.getElementById('p-random-all').addEventListener('click', () => {
   const dtEl = document.getElementById('s-dtmode');
   dtEl.value = dtmodes[Math.floor(Math.random() * dtmodes.length)];
   dtEl.dispatchEvent(new Event('change'));
+  const edges = ['contain', 'overflow', 'restrict'];
+  const edgeEl = document.getElementById('s-edge');
+  edgeEl.value = edges[Math.floor(Math.random() * edges.length)];
+  edgeEl.dispatchEvent(new Event('change'));
   const shuffled = PALETTE.slice().sort(() => Math.random() - 0.5);
   applyColors(shuffled[0], shuffled[1]);
   _suppressURLUpdate = false;
