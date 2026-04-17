@@ -4,7 +4,7 @@ canvas.width = W; canvas.height = H;
 
 const MAX_N = 30;
 
-const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, chaoticMode: 'offset', groupSize: 4, detour: 0, edgeMode: 'contain' };
+const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, chaoticMode: 'offset', groupSize: 4, detour: 0, detourMode: 'arc', edgeMode: 'contain' };
 
 let currentEase = 0;
 let autoMode    = true;
@@ -334,6 +334,11 @@ document.getElementById('s-edge').addEventListener('change', e => {
   updateURL();
 });
 
+document.getElementById('s-dtmode').addEventListener('change', e => {
+  P.detourMode = e.target.value;
+  updateURL();
+});
+
 document.getElementById('s-bl').addEventListener('input', e => {
   if (autoMode) setMode(false);
   currentEase = e.target.value / 100;
@@ -350,8 +355,9 @@ function encodeState() {
   const p = new URLSearchParams();
   URL_SLIDERS.forEach(k => p.set(k, document.getElementById('s-' + k).value));
   p.set('bl',   document.getElementById('s-bl').value);
-  p.set('mode', P.chaoticMode);
-  p.set('edge', P.edgeMode);
+  p.set('mode',   P.chaoticMode);
+  p.set('edge',   P.edgeMode);
+  p.set('dtmode', P.detourMode);
   p.set('auto', autoMode ? '1' : '0');
   p.set('bg',   document.getElementById('c-bg').value.slice(1));
   p.set('fg',   document.getElementById('c-fg').value.slice(1));
@@ -386,6 +392,11 @@ function applyFromURL() {
     el.value = p.get('edge');
     el.dispatchEvent(new Event('change'));
   }
+  if (p.has('dtmode')) {
+    const el = document.getElementById('s-dtmode');
+    el.value = p.get('dtmode');
+    el.dispatchEvent(new Event('change'));
+  }
   if (p.has('bl')) {
     const v = +p.get('bl');
     document.getElementById('s-bl').value = v;
@@ -413,6 +424,10 @@ document.getElementById('p-random-all').addEventListener('click', () => {
   const modeEl = document.getElementById('s-mode');
   modeEl.value = modes[Math.floor(Math.random() * modes.length)];
   modeEl.dispatchEvent(new Event('change'));
+  const dtmodes = ['arc', 'cascade', 'radial'];
+  const dtEl = document.getElementById('s-dtmode');
+  dtEl.value = dtmodes[Math.floor(Math.random() * dtmodes.length)];
+  dtEl.dispatchEvent(new Event('change'));
   const shuffled = PALETTE.slice().sort(() => Math.random() - 0.5);
   applyColors(shuffled[0], shuffled[1]);
   _suppressURLUpdate = false;
@@ -466,17 +481,47 @@ function frame(ts) {
   }
 
   const t = currentEase, t1 = 1 - t;
+  const _n = P.n;
   for (let i = 0; i < MAX_N; i++) {
     const ox = orderedData[i*3], oy = orderedData[i*3+1];
     const cx = chaoticData[i*3], cy = chaoticData[i*3+1];
     const dx = cx - ox, dy = cy - oy;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const amp  = P.detour * dist * _detourSign[i];
-    // control point: midpoint offset perpendicular to travel direction
-    const mx = (ox + cx) * 0.5 + (-dy / (dist || 1)) * amp;
-    const my = (oy + cy) * 0.5 + ( dx / (dist || 1)) * amp;
-    liveData[i*3]   = t1*t1*ox + 2*t1*t*mx + t*t*cx;
-    liveData[i*3+1] = t1*t1*oy + 2*t1*t*my + t*t*cy;
+    let px, py;
+
+    if (P.detourMode === 'cascade') {
+      // staggered timing: circles travel in sequence (index 0 leads)
+      const stagger = P.detour * 0.4; // max ~0.8 of period is stagger offset
+      const lag     = (i / Math.max(_n - 1, 1)) * stagger;
+      const ti      = Math.max(0, Math.min(1, stagger > 0 ? (t - lag) / (1 - stagger) : t));
+      const ti1     = 1 - ti;
+      // small perpendicular arc per circle so they don't stack
+      const amp     = 0.2 * dist * _detourSign[i];
+      const mx      = (ox + cx) * 0.5 + (-dy / (dist || 1)) * amp;
+      const my      = (oy + cy) * 0.5 + ( dx / (dist || 1)) * amp;
+      px = ti1*ti1*ox + 2*ti1*ti*mx + ti*ti*cx;
+      py = ti1*ti1*oy + 2*ti1*ti*my + ti*ti*cy;
+
+    } else if (P.detourMode === 'radial') {
+      // all paths curve toward the canvas centre — centripetal, orchestrated
+      const midX = (ox + cx) * 0.5;
+      const midY = (oy + cy) * 0.5;
+      const mx   = midX + (W * 0.5 - midX) * P.detour;
+      const my   = midY + (H * 0.5 - midY) * P.detour;
+      px = t1*t1*ox + 2*t1*t*mx + t*t*cx;
+      py = t1*t1*oy + 2*t1*t*my + t*t*cy;
+
+    } else {
+      // arc (default): quadratic bezier, perpendicular midpoint offset
+      const amp = P.detour * dist * _detourSign[i];
+      const mx  = (ox + cx) * 0.5 + (-dy / (dist || 1)) * amp;
+      const my  = (oy + cy) * 0.5 + ( dx / (dist || 1)) * amp;
+      px = t1*t1*ox + 2*t1*t*mx + t*t*cx;
+      py = t1*t1*oy + 2*t1*t*my + t*t*cy;
+    }
+
+    liveData[i*3]   = px;
+    liveData[i*3+1] = py;
     liveData[i*3+2] = orderedData[i*3+2] + (chaoticData[i*3+2] - orderedData[i*3+2]) * currentEase;
   }
   gl.uniform3fv(locCircles, liveData);

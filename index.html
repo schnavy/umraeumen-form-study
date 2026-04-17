@@ -17,10 +17,16 @@
   <div id="p-body">
     <div class="sec">form base</div>
     <div class="row"><span class="lbl">circles</span> <input type="range" id="s-n" min="5" max="30" step="1" value="14"> <span class="val" id="v-n">14</span></div>
+    <div class="row"><span class="lbl">diameter</span>    <input type="range" id="s-osz" min="10" max="80" step="1" value="31"> <span class="val" id="v-osz">0.31</span></div>
     <div class="row"><span class="lbl">melting</span> <input type="range" id="s-k" min="3" max="80" step="1" value="50"> <span class="val" id="v-k">0.050</span></div>
 
-    <div class="sec">ordered state</div>
-    <div class="row"><span class="lbl">size</span>    <input type="range" id="s-osz" min="10" max="80" step="1" value="31"> <span class="val" id="v-osz">0.31</span></div>
+    <div class="sec">curve geometry (U)</div>
+    <div class="row"><span class="lbl">x-spread</span>  <input type="range" id="s-mg"    min="2"  max="30"  step="1" value="8">  <span class="val" id="v-mg">0.08</span></div>
+    <div class="row"><span class="lbl">y-spread</span>   <input type="range" id="s-dp"    min="50" max="97"  step="1" value="67"> <span class="val" id="v-dp">0.67</span></div>
+    <div class="row"><span class="lbl">curve</span>   <input type="range" id="s-curve" min="5"  max="80"  step="1" value="25"> <span class="val" id="v-curve">2.5</span></div>
+    <div class="row"><span class="lbl">sides</span>   <input type="range" id="s-sides" min="0"  max="100" step="1" value="78"> <span class="val" id="v-sides">0.78</span></div>
+    <div class="row"><span class="lbl">padding</span> <input type="range" id="s-pad"   min="0"  max="20"  step="1" value="3">  <span class="val" id="v-pad">3%</span></div>
+    <div class="row"><span class="lbl">edges</span>   <select id="s-edge" class="sel"><option value="contain">contain</option><option value="overflow">overflow</option><option value="restrict">restrict</option></select></div>
 
     <div class="sec">organic state</div>
     <div class="row"><span class="lbl">mode</span>      <select id="s-mode" class="sel"><option value="offset">offset</option><option value="island">island</option><option value="random">random</option><option value="collect">collect</option></select></div>
@@ -29,18 +35,11 @@
     <div class="row"><span class="lbl">size</span>      <input type="range" id="s-sz"  min="20" max="200" step="5"  value="140"> <span class="val" id="v-sz">1.4×</span></div>
     <div class="row"><span class="lbl">variation</span> <input type="range" id="s-var" min="0"  max="150" step="5"  value="55">  <span class="val" id="v-var">0.55</span></div>
 
-    <div class="sec">curve geometry</div>
-    <div class="row"><span class="lbl">margin</span>  <input type="range" id="s-mg"    min="2"  max="30"  step="1" value="8">  <span class="val" id="v-mg">0.08</span></div>
-    <div class="row"><span class="lbl">depth</span>   <input type="range" id="s-dp"    min="50" max="97"  step="1" value="67"> <span class="val" id="v-dp">0.67</span></div>
-    <div class="row"><span class="lbl">curve</span>   <input type="range" id="s-curve" min="5"  max="80"  step="1" value="25"> <span class="val" id="v-curve">2.5</span></div>
-    <div class="row"><span class="lbl">sides</span>   <input type="range" id="s-sides" min="0"  max="100" step="1" value="78"> <span class="val" id="v-sides">0.78</span></div>
-    <div class="row"><span class="lbl">padding</span> <input type="range" id="s-pad"   min="0"  max="20"  step="1" value="3">  <span class="val" id="v-pad">3%</span></div>
-    <div class="row"><span class="lbl">edges</span>   <select id="s-edge" class="sel"><option value="contain">contain</option><option value="overflow">overflow</option><option value="restrict">restrict</option></select></div>
-
-    <div class="sec">timing</div>
+    <div class="sec">timing / animation</div>
     <div class="row"><span class="lbl">hold</span>    <input type="range" id="s-hold"   min="1"   max="30"  step="1"  value="5">  <span class="val" id="v-hold">5s</span></div>
     <div class="row"><span class="lbl">speed</span>   <input type="range" id="s-ramp"   min="1"   max="30"  step="1"  value="3">  <span class="val" id="v-ramp">0.3s</span></div>
     <div class="row"><span class="lbl">detour</span>  <input type="range" id="s-detour" min="0"   max="200" step="5"  value="0">  <span class="val" id="v-detour">0.0</span></div>
+    <div class="row"><span class="lbl">path</span>    <select id="s-dtmode" class="sel"><option value="arc">arc</option><option value="cascade">cascade</option><option value="radial">radial</option></select></div>
 
     <div class="sec">color</div>
     <div class="row"><span class="lbl">bg</span>   <input type="color" id="c-bg" value="#ffffff" class="colorpick"></div>
@@ -53,7 +52,7 @@
       <button id="p-btn" class="sm">manual</button>
     </div>
     <div class="row dim" id="row-bl"><span class="lbl">blend</span><input type="range" id="s-bl" min="0" max="100" step="1" value="0"><span class="val" id="v-bl">0%</span></div>
-    <div class="sec">current configuration</div>
+    <div class="sec">configuration</div>
 
     <div class="buttons-group">
       <button id="p-random-all" class="sm">random</button>
