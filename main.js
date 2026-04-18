@@ -4,7 +4,7 @@ canvas.width = W; canvas.height = H;
 
 const MAX_N = 30;
 
-const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, chaoticMode: 'offset', groupSize: 4, detour: 0, detourMode: 'arc', edgeMode: 'contain' };
+const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, tilt: 0, chaoticMode: 'offset', groupSize: 4, detour: 0, detourMode: 'arc', edgeMode: 'contain' };
 
 let currentEase = 0;
 let autoMode    = true;
@@ -183,13 +183,16 @@ function rebuild() {
   const by = ty + curveH;
 
   const STEPS = 500;
+  const midY  = (ty + by) / 2;
   _pathPts = [];
   for (let i = 0; i <= STEPS; i++) {
     const u  = i / STEPS;
     const nu = 2 * u - 1;
     const ss = u * u * (3 - 2 * u);
     const xt = u + (ss - u) * P.sides;
-    _pathPts.push({ x: lx + xt * (rx - lx), y: ty + (by - ty) * (1 - Math.pow(Math.abs(nu), P.curve)) });
+    const y  = ty + (by - ty) * (1 - Math.pow(Math.abs(nu), P.curve));
+    const x  = lx + xt * (rx - lx) + P.tilt * (midY - y);
+    _pathPts.push({ x, y });
   }
   _cumLen = [0];
   for (let i = 1; i <= STEPS; i++) {
@@ -311,6 +314,7 @@ wire('s-dp',   'v-dp',    v => (v/100).toFixed(2),         v => { P.depth = v/10
 wire('s-curve','v-curve', v => (v/10).toFixed(1),          v => { P.curve = v/10; rebuild(); });
 wire('s-sides','v-sides', v => (v/100).toFixed(2),         v => { P.sides = v/100; rebuild(); });
 wire('s-pad',  'v-pad',   v => v + '%',                    v => { P.pad = v/100; rebuild(); });
+wire('s-tilt', 'v-tilt',  v => (v/100).toFixed(2),         v => { P.tilt = v/200; rebuild(); });
 wire('s-hold',  'v-hold',   v => v + 's',                    v => { P.hold = v; });
 wire('s-ramp',  'v-ramp',   v => (v/10).toFixed(1) + 's',   v => { P.ramp = v/10; });
 wire('s-detour','v-detour', v => (v/100).toFixed(1),         v => { P.detour = v/100; });
@@ -347,7 +351,7 @@ document.getElementById('s-bl').addEventListener('input', e => {
 });
 
 // ── URL state ─────────────────────────────────────────────────────────────
-const URL_SLIDERS = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','hold','ramp','detour'];
+const URL_SLIDERS = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','tilt','hold','ramp','detour'];
 
 let _suppressURLUpdate = false;
 
@@ -412,7 +416,7 @@ applyFromURL();
 
 document.getElementById('p-random-all').addEventListener('click', () => {
   _suppressURLUpdate = true;
-  const sliders = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','detour'];
+  const sliders = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','tilt','detour'];
   sliders.forEach(k => {
     const el = document.getElementById('s-' + k);
     const min = +el.min, max = +el.max, step = +(el.step) || 1;
