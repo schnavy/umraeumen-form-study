@@ -6,6 +6,12 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'Friedl BETA1';
+    src: url('fonts/Friedl-Beta1_240227-VF.woff2') format('woff2');
+    font-display: swap;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -14,10 +20,12 @@
 
 body {
     background: #fff;
-    overflow: hidden;
+    overflow: scroll;
+    min-height: 100vh;
 }
 
 canvas {
+    position: fixed;
     display: block;
     width: 100vw;
     height: 100vh;
@@ -28,7 +36,7 @@ h1 {
     font-weight: normal;
     line-height: 0.85;
     text-align: end;
-    position: fixed;
+    position: absolute;
     inset: 0;
     display: flex;
     justify-content: center;
@@ -57,7 +65,7 @@ body[state="1"] {
 }
 
 #panel {
-    position: absolute;
+    position: fixed;
     top: 12px;
     right: 12px;
     font: 14px/1.6 monospace;
@@ -183,7 +191,9 @@ button.sm {
 :root {
     --font-size-h2: 1.55rem;
     --border-radius-md: .5rem;
+    --spacing-sm: .5rem;
     --spacing: .9rem;
+    --spacing-lg: 1.7rem;
     --header-bar-height: calc(var(--spacing) * 2 + var(--font-size-h2));
 }
 
@@ -206,7 +216,7 @@ button.sm {
     z-index: 100;
     min-height: var(--header-bar-height);
     transition: none;
-    position: absolute;
+    position: fixed;
 
     .links-wrapper {
         height: var(--font-size-h2);
@@ -282,5 +292,46 @@ button.sm {
                 }
             }
         }
+    }
+}
+
+/* --- Footer ----*/
+
+.footer {
+    pointer-events: none;
+    display: flex;
+    justify-content: flex-end;
+    position: absolute;
+    gap: var(--spacing);
+    padding: var(--spacing-lg);
+    margin-top: 150vh;
+    width: 100%;
+    align-items: flex-start;
+    font-family: 'Friedl BETA1', sans-serif;
+
+    .links-col {
+        align-items: center;
+        gap: var(--spacing-lg);
+        display: flex;
+
+        .col {
+            align-items: center;
+            gap: var(--spacing-sm) 1.3rem;
+            flex-direction: row;
+            display: flex;
+
+            a {
+                white-space: nowrap;
+                transition: font-variation-settings .1s ease-out;
+                text-decoration: none;
+                color: white;
+            }
+        }
+    }
+
+    .typo-info {
+        font-family: 'Friedl BETA1', sans-serif;
+        font-variation-settings: "wght" 400;
+        font-size: 1rem !important;
     }
 }
