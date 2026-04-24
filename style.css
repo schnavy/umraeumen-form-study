@@ -35,6 +35,16 @@ h1 {
     align-items: center;
     font-size: 6dvw;
     color: white;
+    pointer-events: none;
+    transition: all 200ms;
+}
+
+
+body[state="1"] {
+    h1 {
+        right: 75dvw;
+        font-size: 3dvw;
+    }
 }
 
 #info {
@@ -183,7 +193,7 @@ button.sm {
     background: #4ec960;
     font-family: 'Kolle', serif;
     display: flex;
-    width: 25rem;
+    width: calc(25dvw - 1rem);
 
     border-radius: var(--border-radius-md);
     font-size: var(--font-size-h2);
