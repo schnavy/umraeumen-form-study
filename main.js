@@ -4,15 +4,16 @@ canvas.width = W; canvas.height = H;
 
 const MAX_N = 30;
 
-const P = { n: 14, kFactor: 0.05, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0.03, tilt: 0, chaoticMode: 'offset', groupSize: 4, detour: 0, detourMode: 'arc', edgeMode: 'contain' };
+const P = { n: 14, kFactor: 0.05, kFactorChaotic: 0.05, speedVar: 0, orderedSize: 0.31, offset: 0.11, sizeVar: 1.4, sizeRange: 0.55, margin: 0.08, depth: 0.67, hold: 5, ramp: 0.3, curve: 2.5, sides: 0.78, pad: 0, tilt: 0, chaoticMode: 'offset', groupSize: 4, detour: 0, detourMode: 'arc', edgeMode: 'contain' };
 
 let currentEase = 0;
 let autoMode    = true;
 
-const orderedData  = new Float32Array(MAX_N * 3);
-const chaoticData  = new Float32Array(MAX_N * 3);
-const liveData     = new Float32Array(MAX_N * 3);
-const _detourSign  = new Float32Array(MAX_N);
+const orderedData      = new Float32Array(MAX_N * 3);
+const chaoticData      = new Float32Array(MAX_N * 3);
+const liveData         = new Float32Array(MAX_N * 3);
+const _detourSign      = new Float32Array(MAX_N);
+const _speedVariation  = new Float32Array(MAX_N);
 
 // ── WebGL setup ───────────────────────────────────────────────────────────
 const gl   = canvas.getContext('webgl');
@@ -155,6 +156,21 @@ function randomiseChaotic() {
       chaoticData[i*3+2] = r;
     }
 
+  } else if (P.chaoticMode === 'disk') {
+    const r = _spacing * P.orderedSize;
+    const R = r * Math.sqrt(n) * 1.05;
+    const margin = _padPx + R;
+    const cx = margin + Math.random() * Math.max(0, W - 2 * margin);
+    const cy = margin + Math.random() * Math.max(0, H - 2 * margin);
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < n; i++) {
+      const dr = Math.sqrt((i + 0.5) / n) * R;
+      const theta = i * goldenAngle;
+      chaoticData[i*3]   = cx + dr * Math.cos(theta);
+      chaoticData[i*3+1] = cy + dr * Math.sin(theta);
+      chaoticData[i*3+2] = r;
+    }
+
   } else { // offset
     let si = 0;
     for (let i = 0; i < n; i++) {
@@ -167,7 +183,10 @@ function randomiseChaotic() {
     }
   }
 
-  for (let i = 0; i < MAX_N; i++) _detourSign[i] = Math.random() < 0.5 ? 1 : -1;
+  for (let i = 0; i < MAX_N; i++) {
+    _detourSign[i]     = Math.random() < 0.5 ? 1 : -1;
+    _speedVariation[i] = Math.random() * 2 - 1; // [-1, 1]
+  }
 
   syncRestrict();
 }
@@ -232,7 +251,7 @@ function rebuild() {
   }
 
   randomiseChaotic();
-  gl.uniform1f(locK, S * P.kFactor);
+  gl.uniform1f(locK, S * (P.kFactor + (P.kFactorChaotic - P.kFactor) * currentEase));
 }
 
 rebuild();
@@ -253,6 +272,13 @@ const pCollapse = document.getElementById('p-collapse');
 pCollapse.addEventListener('click', () => {
   const hidden = pBody.classList.toggle('hidden');
   pCollapse.textContent = hidden ? '+' : '-';
+});
+
+const uiEls = [document.querySelector('h1'), document.querySelector('.primary-navigation-menu')];
+document.getElementById('p-ui').addEventListener('click', function() {
+  const hide = uiEls[0].style.display !== 'none';
+  uiEls.forEach(el => { el.style.display = hide ? 'none' : ''; });
+  this.classList.toggle('on', hide);
 });
 
 const PALETTE = [
@@ -304,7 +330,8 @@ function wire(sliderId, valId, display, apply) {
 }
 
 wire('s-n',    'v-n',     v => v,                          v => { P.n = v; rebuild(); });
-wire('s-k',    'v-k',     v => (v/1000).toFixed(3),        v => { P.kFactor = v/1000; gl.uniform1f(locK, S * P.kFactor); });
+wire('s-k',    'v-k',     v => (v/1000).toFixed(3),        v => { P.kFactor = v/1000; });
+wire('s-kc',   'v-kc',   v => (v/1000).toFixed(3),        v => { P.kFactorChaotic = v/1000; });
 wire('s-osz',  'v-osz',   v => (v/100).toFixed(2),         v => { P.orderedSize = v/100; rebuild(); });
 wire('s-off',  'v-off',   v => (v/100).toFixed(2),         v => { P.offset = v/100; rebuild(); });
 wire('s-sz',   'v-sz',    v => (v/100).toFixed(1)+'×',     v => { P.sizeVar = v/100; rebuild(); });
@@ -317,6 +344,7 @@ wire('s-pad',  'v-pad',   v => v + '%',                    v => { P.pad = v/100;
 wire('s-tilt', 'v-tilt',  v => (v/100).toFixed(2),         v => { P.tilt = v/200; rebuild(); });
 wire('s-hold',  'v-hold',   v => v + 's',                    v => { P.hold = v; });
 wire('s-ramp',  'v-ramp',   v => (v/10).toFixed(1) + 's',   v => { P.ramp = v/10; });
+wire('s-spv',   'v-spv',    v => v,                          v => { P.speedVar = v/100; });
 wire('s-detour','v-detour', v => (v/100).toFixed(1),         v => { P.detour = v/100; });
 wire('s-gs',    'v-gs',     v => v,                          v => { P.groupSize = v; randomiseChaotic(); });
 
@@ -351,7 +379,7 @@ document.getElementById('s-bl').addEventListener('input', e => {
 });
 
 // ── URL state ─────────────────────────────────────────────────────────────
-const URL_SLIDERS = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','tilt','hold','ramp','detour'];
+const URL_SLIDERS = ['n','k','kc','osz','off','gs','sz','var','mg','dp','curve','sides','pad','tilt','hold','ramp','spv','detour'];
 
 let _suppressURLUpdate = false;
 
@@ -416,7 +444,7 @@ applyFromURL();
 
 document.getElementById('p-random-all').addEventListener('click', () => {
   _suppressURLUpdate = true;
-  const sliders = ['n','k','osz','off','gs','sz','var','mg','dp','curve','sides','pad','tilt','detour'];
+  const sliders = ['n','k','kc','osz','off','gs','sz','var','mg','dp','curve','sides','tilt','spv','detour'];
   sliders.forEach(k => {
     const el = document.getElementById('s-' + k);
     const min = +el.min, max = +el.max, step = +(el.step) || 1;
@@ -424,7 +452,7 @@ document.getElementById('p-random-all').addEventListener('click', () => {
     el.value = min + Math.floor(Math.random() * (steps + 1)) * step;
     el.dispatchEvent(new Event('input'));
   });
-  const modes = ['offset', 'island', 'random', 'collect'];
+  const modes = ['offset', 'island', 'collect', 'disk'];
   const modeEl = document.getElementById('s-mode');
   modeEl.value = modes[Math.floor(Math.random() * modes.length)];
   modeEl.dispatchEvent(new Event('change'));
@@ -488,7 +516,7 @@ function frame(ts) {
     document.getElementById('v-bl').textContent = pct + '%';
   }
 
-  const t = currentEase, t1 = 1 - t;
+  const t = currentEase;
   const _n = P.n;
   for (let i = 0; i < MAX_N; i++) {
     const ox = orderedData[i*3], oy = orderedData[i*3+1];
@@ -497,16 +525,24 @@ function frame(ts) {
     const dist = Math.sqrt(dx * dx + dy * dy);
     let px, py;
 
+    const maxDelay = P.speedVar * 0.4;
+    const duration = 1 - maxDelay;
+    const delay    = ((_speedVariation[i] + 1) / 2) * maxDelay;
+    const tEff     = duration > 0 ? Math.max(0, Math.min(1, (t - delay) / duration)) : t;
+
     if (P.detourMode === 'cascade') {
       // staggered timing: circles travel in sequence (index 0 leads)
-      const stagger = P.detour * 0.4; // max ~0.8 of period is stagger offset
-      const lag     = (i / Math.max(_n - 1, 1)) * stagger;
-      const ti      = Math.max(0, Math.min(1, stagger > 0 ? (t - lag) / (1 - stagger) : t));
-      const ti1     = 1 - ti;
+      const stagger  = P.detour * 0.4; // max ~0.8 of period is stagger offset
+      const lag      = (i / Math.max(_n - 1, 1)) * stagger;
+      const tiBase   = Math.max(0, Math.min(1, stagger > 0 ? (t - lag) / (1 - stagger) : t));
+      const maxDelayC = P.speedVar * 0.4;
+      const durationC = 1 - maxDelayC;
+      const ti        = durationC > 0 ? Math.max(0, Math.min(1, (tiBase - delay) / durationC)) : tiBase;
+      const ti1      = 1 - ti;
       // small perpendicular arc per circle so they don't stack
-      const amp     = 0.2 * dist * _detourSign[i];
-      const mx      = (ox + cx) * 0.5 + (-dy / (dist || 1)) * amp;
-      const my      = (oy + cy) * 0.5 + ( dx / (dist || 1)) * amp;
+      const amp      = 0.2 * dist * _detourSign[i];
+      const mx       = (ox + cx) * 0.5 + (-dy / (dist || 1)) * amp;
+      const my       = (oy + cy) * 0.5 + ( dx / (dist || 1)) * amp;
       px = ti1*ti1*ox + 2*ti1*ti*mx + ti*ti*cx;
       py = ti1*ti1*oy + 2*ti1*ti*my + ti*ti*cy;
 
@@ -516,23 +552,26 @@ function frame(ts) {
       const midY = (oy + cy) * 0.5;
       const mx   = midX + (W * 0.5 - midX) * P.detour;
       const my   = midY + (H * 0.5 - midY) * P.detour;
-      px = t1*t1*ox + 2*t1*t*mx + t*t*cx;
-      py = t1*t1*oy + 2*t1*t*my + t*t*cy;
+      const e1   = 1 - tEff;
+      px = e1*e1*ox + 2*e1*tEff*mx + tEff*tEff*cx;
+      py = e1*e1*oy + 2*e1*tEff*my + tEff*tEff*cy;
 
     } else {
       // arc (default): quadratic bezier, perpendicular midpoint offset
-      const amp = P.detour * dist * _detourSign[i];
+      const amp = P.detour * dist * 0.4 * _detourSign[i];
       const mx  = (ox + cx) * 0.5 + (-dy / (dist || 1)) * amp;
       const my  = (oy + cy) * 0.5 + ( dx / (dist || 1)) * amp;
-      px = t1*t1*ox + 2*t1*t*mx + t*t*cx;
-      py = t1*t1*oy + 2*t1*t*my + t*t*cy;
+      const e1  = 1 - tEff;
+      px = e1*e1*ox + 2*e1*tEff*mx + tEff*tEff*cx;
+      py = e1*e1*oy + 2*e1*tEff*my + tEff*tEff*cy;
     }
 
     liveData[i*3]   = px;
     liveData[i*3+1] = py;
-    liveData[i*3+2] = orderedData[i*3+2] + (chaoticData[i*3+2] - orderedData[i*3+2]) * currentEase;
+    liveData[i*3+2] = orderedData[i*3+2] + (chaoticData[i*3+2] - orderedData[i*3+2]) * tEff;
   }
   gl.uniform3fv(locCircles, liveData);
+  gl.uniform1f(locK, S * (P.kFactor + (P.kFactorChaotic - P.kFactor) * currentEase));
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 requestAnimationFrame(frame);
